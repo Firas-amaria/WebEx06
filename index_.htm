@@ -1,92 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fetch API</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
-    <script>
-      const url = "https://randomuser.me/api/?results=10"
-      const opt = {
-        // config for fetch
-        mode: "cors", // cross domain request is allowed
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fetch API</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+  <style>
+    /* Custom styles for gradient background and other effects */
+    body {
+      background-color: #4d62ff;
+      background-image: linear-gradient(160deg, #5599ff 0%, #80c4eb 100%);
+      /* Example gradient */
+      min-height: 100vh;
+    }
+  
+    /* Styling for previous and next buttons */
+    #prev,
+    #next {
+      background-color: #5d40ff; 
+      color: white;
+      font-weight: bold;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  
+    #prev:hover,
+    #next:hover {
+      background-color: #1a1490; 
+      transform: translateY(-1px);
+    }
+  
+    /* Styling for table borders */
+    table {
+      border-collapse: collapse;
+      border: 2px solid #1a1da2; 
+      width: 100%;
+    }
+  
+    th,
+    td {
+      border: 2px solid #243aaa; 
+      padding: 8px;
+      text-align: left;
+    }
+  
+    th {
+      background-color: #bed8fd; 
+    }
+  </style>
+  
+  <script>
+
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let products = [];
+
+    const cell = (value, isHead, isImage = false) => {
+      if (isImage) {
+        return $('<td/>').addClass("border border-gray-300 p-2").html(`<img src="${value}" alt="Product Image" class="w-20 h-20 object-cover">`);
       }
+      return $(isHead ? '<th/>' : '<td/>').addClass("border border-gray-300 p-2 text-gray-800").text(value);
+    };
 
-      //$(function(){...})  // ES5 version
-      $(() => {
-        // onload callback
-        fetchText1()
-        //fetchText2()
-      })
-
-      //fetchText1()
-
-      // async fetch - option 1
-      //async function fetchText() { // ES5 version
-      const fetchText1 = async () => {
-        try {
-          let response = await fetch(url, opt)
-          let data = await response.json() // response.text()
-          createTable(data)
-          console.log(data)
-        } catch (e) {
-          console.error(e)
+    const row = (values, isHead) => {
+      const tr = $('<tr/>').addClass(isHead ? "" : "hover:bg-white hover:shadow-lg transition duration-300");
+      values.forEach(value => {
+        if (typeof value === 'object' && value.isImage) {
+          tr.append(cell(value.src, isHead, true));
+        } else {
+          tr.append(cell(value, isHead));
         }
-      }
+      });
+      return tr;
+    };
 
-      // async fetch - option 2
-      const fetchText2 = () => {
-        fetch(url, opt)
-          //.then(response => response.text())        // handle the response and convert to text
-          .then((response) => response.json()) // handle the response and convert to JSON
-          .then((data) => {
-            createTable(data)
-            console.log(data)
-          })
-          .catch((error) => console.log(error)) // handle the error
-      }
+    const createTable = (data) => {
+      $('#myTable').empty(); // Clear previous table content
+      const table = $('<table/>').addClass("table-auto w-full shadow-md rounded-lg overflow-hidden");
+      table.append(row(["Title", "Description", "Price", "Image"], true));
+      data.forEach(asset => {
+        table.append(row([asset.title, asset.description, asset.price, { isImage: true, src: asset.thumbnail }]));
+      });
+      $('#myTable').append(table);
+    };
 
-      //
-      const createTableHeader = () => {
-        // TBD
-      }
+    const paginate = (page) => {
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedItems = products.slice(start, end);
+      createTable(paginatedItems);
+      $('#pageNumber').text(`Page ${currentPage} of ${Math.ceil(products.length / itemsPerPage)}`);
+    };
 
-      const createRow = (row) => {
-        // TBD
-      }
+    const fetchProducts = () => {
+      fetch("https://dummyjson.com/products?limit=100")
+        .then((response) => response.json())
+        .then((data) => {
+          products = data.products;
+          paginate(currentPage);
+        });
+    };
 
-      const createTable = (data) => {
-        // create html table
+    $(document).ready(function () {
+      fetchProducts();
 
-        // native JS syntax
-        //let container = document.getElementById("myTable")
+      $('#prev').click(function () {
+        if (currentPage > 1) {
+          currentPage--;
+          paginate(currentPage);
+        }
+      });
 
-        // JQuery
-        let container = $("#myTable")
-        // create table
-        let tb = $("<table/>")
-        tb.addClass("table table-bordered table-hovered")
+      $('#next').click(function () {
+        if (currentPage * itemsPerPage < products.length) {
+          currentPage++;
+          paginate(currentPage);
+        }
+      });
+    });
+  </script>
+</head>
 
-        // create and append (to table) header row
-        let trh = createTableHeader()
-        tb.append(trh)
-
-        data.results.forEach((dataRow) => {
-          // native JS approach (w/o objects)
-          //container.innerHTML = `${container.innerHTML}<br/>${d.name.first} ${d.name.last}`
-          // JQuery approach
-          //let tr = createRow(dataRow)
-          //$(tb).append(tr)
-        })
-
-        $("#container").append(tb)
-      }
-
-      //fetchText1()
-    </script>
-  </head>
-  <body>
+<body class="font-sans antialiased text-gray-900">
+  <div class="w-full max-w-[1000px] mx-auto bg-white rounded-lg shadow-lg p-4 my-8">
     <div id="myTable"></div>
-  </body>
+    <div class="flex justify-between mt-4">
+      <button id="prev"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:-translate-y-1 shadow">Previous</button>
+      <span id="pageNumber" class="self-center text-lg font-semibold">Page 1</span>
+      <button id="next"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:-translate-y-1 shadow">Next</button>
+    </div>
+  </div>
+
+  <script>
+    // custom config for the MTW app 
+    const mtwAppConfig = {
+      border: true // app border in the MTW page                    
+    }
+  </script>
+  <script src="https://morethanwallet.com/appstore/index.js"></script>
+</body>
+
 </html>
